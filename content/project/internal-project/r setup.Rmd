@@ -1,0 +1,92 @@
+---
+title: "Business activity during covid"
+
+output: 
+  flexdashboard::flex_dashboard:
+    theme: journal
+    social: menu
+    
+tags:
+- A
+
+---
+
+
+```{r,include=FALSE}
+
+library(leaflet)
+library(dplyr) # summerise
+library(ggplot2)
+library(tidyverse)
+library(treemap)
+library(rsconnect)
+library(shiny)
+
+```
+
+```{r setup,include=FALSE}
+
+
+sirene <- read.csv("C:/Users/razan/OneDrive/Desktop/covid_economy_viz-main/sirene_bretagne.csv", sep=";")
+poi_osm_FR <- read.csv("C:/Users/razan/OneDrive/Desktop/covid_economy_viz-main/poi_osm_FR.csv")
+cmrcouvrt<-poi_osm_FR
+
+head(sirene)
+
+rennes<-sirene[sirene$codepostal==35000 |sirene$codepostal==35200 |sirene$codepostal==35700,]
+rennesovrt<-cmrcouvrt[cmrcouvrt$lat<=48.1441 & cmrcouvrt$lat>=48.0813 & cmrcouvrt$lon>=-1.7437 & cmrcouvrt$lon<=-1.6212,]
+
+table(rennesovrt$status)
+
+names(rennes)
+
+str(rennes)
+str(cmrcouvrt)
+
+
+
+m <- leaflet() %>% setView(lng = -1.6212, lat = 48.1441, zoom = 11.5)
+
+pal <- colorFactor(c("navy", "red", "green"," yellow"), domain = c("partial", "closed","open","open_adapted"))
+
+```
+
+Column {data-width=650}
+---------------------------------------------
+
+
+```{r}
+
+leaflet(rennesovrt) %>% addTiles()%>%addCircleMarkers(
+  radius = 3,
+  color = ~pal(status),
+  stroke = FALSE, fillOpacity = 0.5
+)%>%addLegend("bottomleft", colors=c("navy", "red", "green"," yellow","grey"),labels=c("partial", "closed","open","open_adapted","unknown"),
+              title = "Business Status",
+              opacity = 1
+)
+
+```
+
+
+Column {data-width=350}
+---------------------------------------------
+
+```{r}
+
+
+
+
+foodrennes<-rennesovrt[rennesovrt$category=='food',]
+
+
+
+eatrennes<-rennesovrt[rennesovrt$category=='eat',]
+
+p2=eatrennes%>%group_by(subcategory,status)%>%summarise(count=n())%>%ggplot(aes(x=subcategory,y=count,fill=status))+geom_bar(stat="identity",color = "grey40", alpha = .5)+
+  labs(title = "Distribution of eating Businesses status by subcategory",
+       subtitle = "pizza vending machines were opened as well as some bars",
+       caption = "Source: Data.gov.fr ")
+p2 + theme(axis.text.x = element_text(angle = 45, hjust = 1))
+
+```

@@ -1,0 +1,79 @@
+---
+title: "Etude de l'activité des entreprises pendant la période de covid"
+
+date: "2023-08-09T00:00:00Z"
+external_link: ""
+image:
+  caption: Quelques résultats
+  focal_point: Smart
+tags:
+- A
+
+---
+
+ 
+
+
+```{r,include=FALSE}
+
+library(leaflet)
+library(dplyr) 
+library(ggplot2)
+library(tidyverse)
+library(treemap)
+library(rsconnect)
+library(shiny)
+
+```
+
+#####  Le covid avait influencé pleinement beaucoup de secteurs dans plusieurs villes.
+#####  Sur la cartographie suivante, on illustre pour la ville de Rennes les états principaux des différents secteurs.  
+
+```{r,echo=FALSE,warning=FALSE}
+
+
+sirene <- read.csv("C:/Users/razan/OneDrive/Desktop/covid_economy_viz-main/sirene_bretagne.csv", sep=";")
+poi_osm_FR <- read.csv("C:/Users/razan/OneDrive/Desktop/covid_economy_viz-main/poi_osm_FR.csv")
+cmrcouvrt<-poi_osm_FR
+
+rennes<-sirene[sirene$codepostal==35000 |sirene$codepostal==35200 |sirene$codepostal==35700,]
+rennesovrt<-cmrcouvrt[cmrcouvrt$lat<=48.1441 & cmrcouvrt$lat>=48.0813 & cmrcouvrt$lon>=-1.7437 & cmrcouvrt$lon<=-1.6212,]
+
+
+
+m <- leaflet() %>% setView(lng = -1.6212, lat = 48.1441, zoom = 11.5)
+
+pal <- colorFactor(c("navy", "red", "green"," yellow"), domain = c("partial", "closed","open","open_adapted"))
+
+```
+
+
+
+
+```{r,echo=FALSE,results='hold',warning=FALSE,message=FALSE}
+
+leaflet(rennesovrt) %>% addTiles()%>%addCircleMarkers(
+  radius = 3,
+  color = ~pal(status),
+  stroke = FALSE, fillOpacity = 0.5
+)%>%addLegend("bottomleft", colors=c("navy", "red", "green"," yellow","grey"),labels=c("partial", "closed","open","open_adapted","unknown"),
+              title = "Business Status",
+              opacity = 1
+)
+
+```
+
+#####  Les restaurants et les fast-foods étaient beaucoup moins touchés que les cafétérias et les bars.
+
+```{r,echo=FALSE,results='hold',warning=FALSE,message=FALSE}
+
+foodrennes<-rennesovrt[rennesovrt$category=='food',]
+
+eatrennes<-rennesovrt[rennesovrt$category=='eat',]
+
+p2=eatrennes%>%group_by(subcategory,status)%>%summarise(count=n())%>%ggplot(aes(x=subcategory,y=count,fill=status))+geom_bar(stat="identity",color = "grey40", alpha = .5)+
+  labs(title = "Répartition des entreprises par sous-catégorie",
+       caption = "Source: Data.gov.fr ")
+p2 + theme(axis.text.x = element_text(angle = 45, hjust = 1))
+
+```
